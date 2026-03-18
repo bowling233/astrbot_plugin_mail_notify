@@ -59,8 +59,16 @@ def _connect(account: dict) -> imaplib.IMAP4 | imaplib.IMAP4_SSL:
         conn = imaplib.IMAP4(server, port, timeout=30)
 
     conn.login(account["email"], account["password"])
-    # 以只读模式选中 INBOX，不会意外修改服务器上的已读状态
-    conn.select("INBOX", readonly=True)
+
+    # 以只读模式优先选中 INBOX，不会意外修改服务器上的已读状态。
+    # 某些邮箱服务商（如部分网易环境）可能对只读模式兼容性较弱，
+    # 因此在只读失败时再回退到非只读模式。
+    status, data = conn.select("INBOX", readonly=True)
+    if status != "OK":
+        status, data = conn.select("INBOX", readonly=False)
+
+    if status != "OK":
+        raise ValueError(f"无法选择 INBOX: status={status!r}, data={data!r}")
     return conn
 
 
