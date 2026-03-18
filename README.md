@@ -2,7 +2,7 @@
 
 # 📬 邮件通知插件
 
-[![Plugin Version](https://img.shields.io/badge/Latest_Version-v1.1.3-blue.svg?style=for-the-badge&color=76bad9)](https://github.com/gangcaiyoule/astrbot_plugin_mail_notify)
+[![Plugin Version](https://img.shields.io/badge/Latest_Version-v1.2.0-blue.svg?style=for-the-badge&color=76bad9)](https://github.com/gangcaiyoule/astrbot_plugin_mail_notify)
 [![AstrBot](https://img.shields.io/badge/AstrBot-Plugin-ff69b4?style=for-the-badge)](https://github.com/AstrBotDevs/AstrBot)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
@@ -19,9 +19,10 @@ _✨ 监控多个 IMAP 邮箱的新邮件，通过 AstrBot 自动推送通知，
 - **邮件摘要** — 通知包含发件人、主题、时间和正文预览
 - **AI 摘要**（可选）— 调用 LLM 对邮件内容生成简洁中文摘要
 - **手动查询** — 可按日期范围查询指定邮箱的历史邮件
+- **手动回复** — 在聊天里通过指令手动发送邮件回复（基于 SMTP）
 - **WebUI 配置** — 在 AstrBot 管理面板中可视化配置，无需修改代码
 - **智能过滤** — 只通知插件启用后收到的新邮件，不会推送历史旧邮件
-- **零额外依赖** — 使用 Python 标准库 `imaplib` 和 `email`，无需安装第三方包
+- **零额外依赖** — 使用 Python 标准库 `imaplib`、`smtplib` 和 `email`，无需安装第三方包
 
 ## 📖 使用方法
 
@@ -36,6 +37,10 @@ _✨ 监控多个 IMAP 邮箱的新邮件，通过 AstrBot 自动推送通知，
 | IMAP 端口 | SSL 通常为 993 | `993` |
 | 邮箱地址 | 你的邮箱地址 | `123456@qq.com` |
 | 密码/应用专用密码 | 见下方各邮箱获取方式 | `xxxxxxxxxxxxxxxx` |
+| SMTP 服务器地址 | 邮箱的 SMTP 服务器 | `smtp.qq.com` |
+| SMTP 端口 | SSL 常用 465，STARTTLS 常用 587 | `465` |
+| SMTP 使用 SSL 连接 | 推荐开启 | `true` |
+| SMTP 密码/应用专用密码 | 留空则复用上方密码字段 | `xxxxxxxxxxxxxxxx` |
 | 使用 SSL 连接 | 推荐开启 | `true` |
 
 可添加多个邮箱账户，每个账户独立监控。
@@ -66,6 +71,7 @@ _✨ 监控多个 IMAP 邮箱的新邮件，通过 AstrBot 自动推送通知，
 | `/mail_check` | 立即手动检查所有邮箱的新邮件 | `/mail_check` |
 | `/mail_status` | 查看所有邮箱的连接状态和最近检查时间 | `/mail_status` |
 | `/mail_query` | 查询指定邮箱自某日期以来的邮件（最多 20 条） | `/mail_query qq邮箱 2026-03-01` |
+| `/mail_reply` | 使用指定账户手动发送邮件回复（管理员） | `/mail_reply qq邮箱 test@example.com 回复主题\|你好，已收到你的邮件。` |
 
 ### `/mail_query` 用法详解
 
@@ -82,6 +88,24 @@ _✨ 监控多个 IMAP 邮箱的新邮件，通过 AstrBot 自动推送通知，
 ```
 
 会返回该邮箱自 2026 年 3 月 1 日以来的邮件列表。
+
+### `/mail_reply` 用法详解
+
+```
+/mail_reply <账户备注名> <收件人邮箱> <主题>|<正文>
+```
+
+- `<账户备注名>`：你在配置中填写的名称，如 `qq邮箱`、`谷歌邮箱`
+- `<收件人邮箱>`：目标收件人邮箱地址
+- `<主题>|<正文>`：使用 `|` 分隔主题和正文，正文支持空格（`|`必须是英文半角竖线）
+
+示例：
+```
+/mail_reply qq邮箱 test@example.com 回复主题|你好，已收到你的邮件。
+```
+
+> [!IMPORTANT]
+> `/mail_reply` 需要先配置对应邮箱的 SMTP 信息，且默认仅管理员可用。
 
 ## 🔑 各邮箱密码/授权码获取方式
 
@@ -246,6 +270,22 @@ Outlook 可以直接使用**账户登录密码**。
 **Q: 后台不自动检查？**
 - 确认已通过 `/mail_bind` 绑定通知目标
 - 通过 `/mail_status` 查看状态
+
+**Q: `/mail_reply` 发送失败？**
+- 检查 SMTP 服务器、端口、SSL 配置是否正确
+- 检查 SMTP 密码/授权码是否可用（部分邮箱和 IMAP 不是同一凭据）
+- 确认收件人邮箱格式正确，主题与正文不为空
+
+## 📦 版本更新日志
+
+### v1.2.0
+- 新增 `/mail_reply` 手动回复指令（管理员可用）
+- 新增 SMTP 发信支持（SSL / STARTTLS）
+- 邮箱账户配置新增 SMTP 字段，支持 `smtp_password` 留空回退 `password`
+
+### v1.1.3
+- 支持多邮箱 IMAP 新邮件监控与自动通知
+- 支持 AI 摘要、手动检查、状态查看与历史查询
 
 ## License
 

@@ -1,4 +1,5 @@
 import asyncio
+import re
 from datetime import datetime, timezone
 
 from astrbot.api import AstrBotConfig, logger
@@ -6,13 +7,14 @@ from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star, register
 
 from .imap_client import imap_fetch_new, imap_query_since, is_recent_email
+from .smtp_client import smtp_send_mail
 
 
 @register(
     "astrbot_plugin_mail_notify",
     "YourName",
     "监控邮箱新邮件并通过 QQ 私聊发送通知",
-    "1.1.3",
+    "1.2.0",
 )
 class MailNotifyPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -160,6 +162,52 @@ class MailNotifyPlugin(Star):
             logger.warning(f"MailNotify: AI summary failed: {e}")
         return fallback
 
+    def _get_account_by_name_or_email(self, account_name: str) -> dict | None:
+        accounts = self.config.get("mail_accounts", [])
+        target_name = account_name.strip()
+        for acc in accounts:
+            name = (acc.get("name") or "").strip()
+            addr = (acc.get("email") or "").strip()
+            if target_name in (name, addr):
+                return acc
+        return None
+
+    def _parse_mail_reply_args(self, message_str: str) -> tuple[str, str, str, str]:
+        raw = re.sub(r"\s+", " ", (message_str or "").strip())
+        if not raw:
+            raise ValueError("参数为空。")
+
+        parts = raw.split(" ", 1)
+        if len(parts) < 2:
+            raise ValueError("参数缺失。")
+        args_text = parts[1].strip()
+
+        args = args_text.split(" ", 2)
+        if len(args) < 3:
+            raise ValueError("参数不足。")
+
+        account_name, to_addr, subject_body = args[0].strip(), args[1].strip(), args[2]
+
+        if "|" not in subject_body:
+            raise ValueError("缺少主题与正文分隔符。")
+
+        subject, body = [s.strip() for s in subject_body.split("|", 1)]
+        if not account_name:
+            raise ValueError("账户名不能为空。")
+        if not to_addr:
+            raise ValueError("收件人不能为空。")
+        if "@" not in to_addr:
+            raise ValueError("收件人邮箱格式错误。")
+        if not subject:
+            raise ValueError("邮件主题不能为空。")
+        if not body:
+            raise ValueError("邮件正文不能为空。")
+        if len(subject) > 200:
+            raise ValueError("邮件主题过长（最多 200 字符）。")
+        if len(body) > 5000:
+            raise ValueError("邮件正文过长（最多 5000 字符）。")
+        return account_name, to_addr, subject, body
+
     # ── Commands ─────────────────────────────────────────────────
 
     @filter.command("mail_bind")
@@ -294,6 +342,53 @@ class MailNotifyPlugin(Star):
             lines.append(f"{i}. 📋 {m['subject']}")
             lines.append(f"   📤 {m['from_name']}  🕐 {m['date']}")
         yield event.plain_result("\n".join(lines))
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command("mail_reply")
+    async def mail_reply(self, event: AstrMessageEvent):
+        """手动发送邮件回复。格式：/mail_reply <账户备注名> <收件人邮箱> <主题>|<正文>"""
+        usage = (
+            "❌ 用法错误\n"
+            "格式: /mail_reply <账户备注名> <收件人邮箱> <主题>|<正文>\n"
+            "示例: /mail_reply qq邮箱 test@example.com 回复主题|你好，已收到你的邮件。"
+        )
+
+        try:
+            account_name, to_addr, subject, body = self._parse_mail_reply_args(
+                event.message_str
+            )
+        except ValueError as e:
+            yield event.plain_result(f"{usage}\n原因: {e}")
+            return
+
+        account = self._get_account_by_name_or_email(account_name)
+        if not account:
+            accounts = self.config.get("mail_accounts", [])
+            account_names = ", ".join(
+                (a.get("name") or a.get("email") or "?") for a in accounts
+            )
+            yield event.plain_result(
+                f'❌ 未找到名为 "{account_name}" 的邮箱账户。\n已配置账户: {account_names or "(空)"}'
+            )
+            return
+
+        if not account.get("smtp_server"):
+            yield event.plain_result(
+                "❌ 该账户未配置 SMTP 服务器。请在插件配置中填写 smtp_server、smtp_port、smtp_use_ssl。"
+            )
+            return
+
+        yield event.plain_result("📤 正在发送邮件...")
+        try:
+            await asyncio.to_thread(smtp_send_mail, account, to_addr, subject, body)
+        except Exception as e:
+            yield event.plain_result(f"❌ 发送失败: {e}")
+            return
+
+        account_display = account.get("name") or account.get("email") or account_name
+        yield event.plain_result(
+            f"✅ 发送成功\n账户: {account_display}\n收件人: {to_addr}\n主题: {subject}"
+        )
 
     # ── Lifecycle ────────────────────────────────────────────────
 

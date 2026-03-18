@@ -88,7 +88,7 @@ def _parse_email(msg, uid: bytes, max_body_len: int) -> dict:
     try:
         dt = parsedate_to_datetime(date_str)
         date_formatted = dt.strftime("%Y-%m-%d %H:%M")  # 用于展示
-        date_raw = dt.isoformat()                         # 用于 is_recent_email() 比较
+        date_raw = dt.isoformat()  # 用于 is_recent_email() 比较
     except Exception:
         # 日期格式非标准时降级处理，截取原始字符串前 25 位
         date_formatted = date_str[:25] if date_str else "未知"

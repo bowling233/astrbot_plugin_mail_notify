@@ -37,6 +37,30 @@
             "default": "",
             "hint": "Gmail 需使用应用专用密码，QQ 邮箱需使用授权码"
           },
+          "smtp_server": {
+            "description": "SMTP 服务器地址",
+            "type": "string",
+            "default": "",
+            "hint": "例如：smtp.gmail.com、smtp.qq.com、smtp.hdu.edu.cn"
+          },
+          "smtp_port": {
+            "description": "SMTP 端口",
+            "type": "int",
+            "default": 465,
+            "hint": "SSL 常用 465，STARTTLS 常用 587"
+          },
+          "smtp_use_ssl": {
+            "description": "SMTP 使用 SSL 连接",
+            "type": "bool",
+            "default": true,
+            "hint": "为 false 时将使用 STARTTLS"
+          },
+          "smtp_password": {
+            "description": "SMTP 密码/应用专用密码",
+            "type": "string",
+            "default": "",
+            "hint": "留空时默认使用上方 password 字段"
+          },
           "use_ssl": {
             "description": "使用 SSL 连接",
             "type": "bool",
