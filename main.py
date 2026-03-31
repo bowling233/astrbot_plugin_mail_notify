@@ -14,7 +14,7 @@ from .smtp_client import smtp_send_mail
     "astrbot_plugin_mail_notify",
     "YourName",
     "监控邮箱新邮件并通过 QQ 私聊发送通知",
-    "1.3.0",
+    "1.3.1",
 )
 class MailNotifyPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
