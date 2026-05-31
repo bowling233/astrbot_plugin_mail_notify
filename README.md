@@ -4,7 +4,7 @@
 
 [![Plugin Version](https://img.shields.io/badge/Latest_Version-v1.3.2-blue.svg?style=for-the-badge&color=76bad9)](https://github.com/gangcaiyoule/astrbot_plugin_mail_notify)
 [![AstrBot](https://img.shields.io/badge/AstrBot-Plugin-ff69b4?style=for-the-badge)](https://github.com/AstrBotDevs/AstrBot)
-[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL-green.svg?style=for-the-badge)](LICENSE)
 
 _✨ 监控多个 IMAP 邮箱的新邮件，通过 AstrBot 自动推送通知，支持 AI 智能摘要。✨_
 
@@ -311,4 +311,4 @@ QQ: `964389211`
 
 ## License
 
-MIT
+AGPL-3.0
