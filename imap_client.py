@@ -123,6 +123,8 @@ def _parse_email(
     try:
         dt = parsedate_to_datetime(date_str)
         date_formatted = dt.strftime("%Y-%m-%d %H:%M")  # 用于展示
+        if dt.tzinfo is not None:
+            date_formatted += dt.strftime(" %z") # 应当展示时区信息
         date_raw = dt.isoformat()  # 用于 is_recent_email() 比较
     except Exception:
         # 日期格式非标准时降级处理，截取原始字符串前 25 位
